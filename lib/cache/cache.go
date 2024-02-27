@@ -154,6 +154,7 @@ func ForAuth(cfg Config) Config {
 		{Kind: types.KindKubeServer},
 		{Kind: types.KindInstaller},
 		{Kind: types.KindKubernetesCluster},
+		{Kind: types.KindCrownJewel},
 		{Kind: types.KindSAMLIdPServiceProvider},
 		{Kind: types.KindUserGroup},
 		{Kind: types.KindOktaImportRule},
@@ -525,6 +526,7 @@ type Cache struct {
 	restrictionsCache            services.Restrictions
 	appsCache                    services.Apps
 	kubernetesCache              services.Kubernetes
+	crownJewelsCache             services.CrownJewels
 	databaseServicesCache        services.DatabaseServices
 	databasesCache               services.Databases
 	appSessionCache              services.AppSession
@@ -674,7 +676,8 @@ type Config struct {
 	// Apps is an apps service.
 	Apps services.Apps
 	// Kubernetes is an kubernetes service.
-	Kubernetes services.Kubernetes
+	Kubernetes  services.Kubernetes
+	CrownJewels services.CrownJewels
 	// DatabaseServices is a DatabaseService service.
 	DatabaseServices services.DatabaseServices
 	// Databases is a databases service.
@@ -936,6 +939,7 @@ func New(config Config) (*Cache, error) {
 		restrictionsCache:            local.NewRestrictionsService(config.Backend),
 		appsCache:                    local.NewAppService(config.Backend),
 		kubernetesCache:              local.NewKubernetesService(config.Backend),
+		crownJewelsCache:             local.NewCrownJewelsService(config.Backend),
 		databaseServicesCache:        local.NewDatabaseServicesService(config.Backend),
 		databasesCache:               local.NewDatabasesService(config.Backend),
 		appSessionCache:              local.NewIdentityService(config.Backend),

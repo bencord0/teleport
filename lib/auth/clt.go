@@ -805,6 +805,7 @@ type ClientI interface {
 	events.AuditLogSessionStreamer
 	events.Streamer
 	apievents.Emitter
+	services.CrownJewels
 	services.Presence
 	services.Access
 	services.DynamicAccess
@@ -830,6 +831,7 @@ type ClientI interface {
 
 	types.WebSessionsGetter
 	types.WebTokensGetter
+	services.CrownJewels
 
 	// TrustClient returns a client to the Trust service.
 	TrustClient() trustpb.TrustServiceClient

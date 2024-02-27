@@ -48,6 +48,7 @@ type Services interface {
 	UserGroups
 	Integrations
 	KubeWaitingContainer
+	CrownJewels
 
 	OktaClient() Okta
 	AccessListClient() AccessLists

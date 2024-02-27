@@ -59,6 +59,7 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/time/rate"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/gravitational/teleport"
 	"github.com/gravitational/teleport/api/client"
@@ -238,6 +239,13 @@ func NewServer(cfg *InitConfig, opts ...ServerOption) (*Server, error) {
 			return nil, trace.Wrap(err)
 		}
 	}
+
+	if cfg.CrownJewels == nil {
+		cfg.CrownJewels = local.NewCrownJewelsService(cfg.Backend)
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+	}
 	if cfg.ConnectionsDiagnostic == nil {
 		cfg.ConnectionsDiagnostic = local.NewConnectionsDiagnosticService(cfg.Backend)
 	}
@@ -389,6 +397,7 @@ func NewServer(cfg *InitConfig, opts ...ServerOption) (*Server, error) {
 		UserPreferences:           cfg.UserPreferences,
 		PluginData:                cfg.PluginData,
 		KubeWaitingContainer:      cfg.KubeWaitingContainers,
+		CrownJewels:               cfg.CrownJewels,
 	}
 
 	as := Server{
@@ -519,6 +528,7 @@ type Services struct {
 	services.Restrictions
 	services.Apps
 	services.Kubernetes
+
 	services.Databases
 	services.DatabaseServices
 	services.WindowsDesktops
@@ -544,6 +554,7 @@ type Services struct {
 	events.AuditLogSessionStreamer
 	services.SecReports
 	services.KubeWaitingContainer
+	services.CrownJewels
 }
 
 // SecReportsClient returns the security reports client.
@@ -6893,4 +6904,25 @@ func DefaultDNSNamesForRole(role types.SystemRole) []string {
 		}
 	}
 	return nil
+}
+
+// GetClusterConfig ..
+func (a *Server) CreateCrownJewel(ctx context.Context, req *types.CrownJewel) (*types.CrownJewel, error) {
+	crown, err := a.Services.CreateCrownJewel(ctx, req)
+	return crown, trace.Wrap(err)
+}
+
+// GetCrownJewels ...
+func (a *Server) GetCrownJewels(ctx context.Context, _ *emptypb.Empty) (*proto.CrownJewelList, error) {
+	list, err := a.Services.GetCrownJewels(ctx)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return &proto.CrownJewelList{CrownJewels: list}, nil
+}
+
+// DeleteCrownJewel ...
+func (a *Server) DeleteCrownJewel(ctx context.Context, req *types.CrownJewel) (*emptypb.Empty, error) {
+	err := a.Services.DeleteCrownJewel(ctx, req.GetName())
+	return &emptypb.Empty{}, trace.Wrap(err)
 }
