@@ -154,5 +154,7 @@ message Event {
     // KubernetesWaitingContainer is a Kubernetes ephemeral container
     // waiting to be created.
     teleport.kubewaitingcontainer.v1.KubernetesWaitingContainer KubernetesWaitingContainer = 55;
+
+    types.CrownJewel CrownJewel = 54;
   }
 }
