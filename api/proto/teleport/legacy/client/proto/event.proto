@@ -155,6 +155,6 @@ message Event {
     // waiting to be created.
     teleport.kubewaitingcontainer.v1.KubernetesWaitingContainer KubernetesWaitingContainer = 55;
 
-    types.CrownJewel CrownJewel = 54;
+    types.CrownJewel CrownJewel = 56;
   }
 }
