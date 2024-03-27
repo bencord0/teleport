@@ -23,6 +23,7 @@ package accessgraph.v1alpha;
 import "accessgraph/v1alpha/aws.proto";
 import "accessgraph/v1alpha/graph.proto";
 import "accessgraph/v1alpha/resources.proto";
+import "teleport/legacy/types/events/events.proto";
 
 option go_package = "github.com/gravitational/teleport/gen/proto/go/accessgraph/v1alpha;accessgraphv1alpha";
 
@@ -50,7 +51,10 @@ service AccessGraphService {
   // This stream is used to sync the access graph with the Teleport database state.
   // Once Teleport finishes syncing the current state, it sends a sync command
   // to the access graph service and resumes sending events.
-  rpc EventsStream(stream EventsStreamRequest) returns (stream EventsStreamResponse);
+  rpc EventsStream(stream EventsStreamRequest) returns (EventsStreamResponse);
+
+  // EventsStreamV2 should have a non-empty comment for documentation.
+  rpc EventsStreamV2(stream EventsStreamV2Request) returns (stream EventsStreamV2Response);
 
   // Register submits a new tenant representing this Teleport cluster to the TAG service,
   // identified by its HostCA certificate.
@@ -137,22 +141,33 @@ message EventsStreamRequest {
     // from the access list but they don't receive any access - in that case,
     // the request is [access_lists_members].
     ExcludeAccessListsMembers exclude_access_list_members = 5;
-    CrownJewels add_crown_jewels = 6;
-    CrownJewels delete_crown_jewels = 7;
   }
 }
 
-// CrownJewels ...
-message CrownJewels {
-  repeated CrownJewel crown_jewels = 1;
-}
-
-// CrownJewel ..
-message CrownJewel {
-  string name = 1;
-  string description = 2;
-  // user, kube, db
-  string type = 3;
+// EventsStreamV2Request is a request to send commands to the access graph.
+// This command is used to sync the access graph with the Teleport database state.
+message EventsStreamV2Request {
+  // operation contains the desired operation
+  oneof operation {
+    // sync is a command to sync the access graph with the Teleport database state.
+    // it's issued once Teleport finishes syncing all resources with the database.
+    SyncOperation sync = 1;
+    // upsert is a command to put a resource into the access graph or update it.
+    ResourceList upsert = 2;
+    // delete is a command to delete a resource from the access graph when it's deleted from Teleport.
+    ResourceHeaderList delete = 3;
+    // access_lists_members is a command to upsert access lists members.
+    // It's issued when a user is added to an access list or when their membership is updated.
+    // It's also issued when a user membership expires but the user remains in the access list.
+    // In that case, the state of the user reflects the expiration reason.
+    AccessListsMembers access_lists_members = 4;
+    // exclude_access_list_members is a command to exclude access lists members
+    // when they are manually removed from the access list.
+    // If their membership remains but it's expired, they are not excluded
+    // from the access list but they don't receive any access - in that case,
+    // the request is [access_lists_members].
+    ExcludeAccessListsMembers exclude_access_list_members = 5;
+  }
 }
 
 // SyncOperation is a command that Teleport sends to the access graph service
@@ -160,15 +175,18 @@ message CrownJewel {
 message SyncOperation {}
 
 // EventsStreamResponse is the response from EventsStream.
-message EventsStreamResponse {
-  oneof operation {
-    CrownJewelResponse crown_monitoring = 1;
-  }
+message EventsStreamResponse {}
+
+// EventsStreamV2Response is the response from EventsStreamV2.
+message EventsStreamV2Response {
+  AuditEvent event = 1;
 }
 
 // CrownJewelResponse is a...
-message CrownJewelResponse {
-  string uuid = 1;
+message AuditEvent {
+  oneof event {
+    events.AccessPathChanged access_path_changed = 1;
+  }
 }
 
 // RegisterRequest is the request for Register.

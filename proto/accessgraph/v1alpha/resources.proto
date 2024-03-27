@@ -73,5 +73,7 @@ message ResourceEntry {
     types.WindowsDesktopV3 windows_desktop = 8;
     // access_list is a resource for access lists.
     teleport.accesslist.v1.AccessList access_list = 9;
+
+    types.CrownJewel crown_jewel = 10;
   }
 }
