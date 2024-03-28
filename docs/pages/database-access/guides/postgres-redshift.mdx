@@ -1,10 +1,14 @@
 ---
 title: Database Access with Redshift on AWS
-description: How to configure Teleport database access with AWS Redshift PostgreSQL.
+description: How to configure Teleport database access with Amazon Redshift PostgreSQL.
 videoBanner: UFhT52d5bYg
 ---
 
-(!docs/pages/includes/database-access/db-introduction.mdx  dbType="AWS Redshift" dbConfigure="AWS Redshift database with IAM authentication" dbName="AWS Redshift" !)
+(!docs/pages/includes/database-access/db-introduction.mdx  dbType="Amazon Redshift" dbConfigure="Amazon Redshift database with IAM authentication" dbName="Amazon Redshift" !)
+
+## How it works
+
+(!docs/pages/includes/database-access/how-it-works/iam.mdx db="Amazon Redshift" cloud="AWS"!)
 
 <Tabs>
 <TabItem scope={["oss", "enterprise"]} label="Self-Hosted">
@@ -183,4 +187,4 @@ $ tsh db logout my-redshift
 
 (!docs/pages/includes/database-access/guides-next-steps.mdx!)
 - Learn more about [using IAM authentication to generate database user
-  credentials](https://docs.aws.amazon.com/redshift/latest/mgmt/generating-user-credentials.html) for AWS Redshift.
+  credentials](https://docs.aws.amazon.com/redshift/latest/mgmt/generating-user-credentials.html) for Amazon Redshift.
