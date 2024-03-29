@@ -249,6 +249,23 @@ message AccessListMemberMetadata {
   repeated AccessListMember Members = 2 [(gogoproto.jsontag) = "members,omitempty"];
 }
 
+// DiffChangelog is a list of changes from one version of a resource to another.
+message DiffChangelog {
+  repeated DiffChange Changes = 1 [(gogoproto.jsontag) = "changes"];
+}
+
+// DiffChange is a change of one field from one version of a resource to another.
+message DiffChange {
+  // Type is the type of change.
+  string Type = 1 [(gogoproto.jsontag) = "type"];
+  // Path is the path to the field that was changed.
+  string Path = 2 [(gogoproto.jsontag) = "path"];
+  // From is the value before the change.
+  string From = 3 [(gogoproto.jsontag) = "from"];
+  // To is the value after the change.
+  string To = 4 [(gogoproto.jsontag) = "to"];
+}
+
 // AccessListMember is metadata surrounding an individual access list member.
 message AccessListMember {
   // JoinedOn is the date that the member joined.
@@ -2467,6 +2484,13 @@ message SAMLConnectorCreate {
     (gogoproto.embed) = true,
     (gogoproto.jsontag) = ""
   ];
+
+  // Changes are the changes between the existing and new SAML connector
+  DiffChangelog Changes = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.embed) = true,
+    (gogoproto.jsontag) = ""
+  ];
 }
 
 // SAMLConnectorUpdate fires when SAML connector is updated.
@@ -2487,6 +2511,13 @@ message SAMLConnectorUpdate {
 
   // User is a common user event metadata
   UserMetadata User = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.embed) = true,
+    (gogoproto.jsontag) = ""
+  ];
+
+  // Changes are the changes between the existing and new SAML connector
+  DiffChangelog Changes = 4 [
     (gogoproto.nullable) = false,
     (gogoproto.embed) = true,
     (gogoproto.jsontag) = ""
