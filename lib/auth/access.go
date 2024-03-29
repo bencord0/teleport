@@ -221,6 +221,10 @@ func (a *Server) UpsertLock(ctx context.Context, lock types.Lock) error {
 
 // DeleteLock deletes a lock and emits a related audit event.
 func (a *Server) DeleteLock(ctx context.Context, lockName string) error {
+	lock, err := a.Services.GetLock(ctx, lockName)
+	if err != nil {
+		return trace.Wrap(err)
+	}
 	if err := a.Services.DeleteLock(ctx, lockName); err != nil {
 		return trace.Wrap(err)
 	}
@@ -234,6 +238,7 @@ func (a *Server) DeleteLock(ctx context.Context, lockName string) error {
 		ResourceMetadata: apievents.ResourceMetadata{
 			Name: lockName,
 		},
+		Target: lock.Target(),
 	}); err != nil {
 		log.WithError(err).Warning("Failed to emit lock delete event.")
 	}

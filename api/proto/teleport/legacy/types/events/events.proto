@@ -3590,6 +3590,12 @@ message LockDelete {
     (gogoproto.embed) = true,
     (gogoproto.jsontag) = ""
   ];
+
+  // Target describes the set of interactions that the lock applies to
+  types.LockTarget Target = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "target"
+  ];
 }
 
 // RecoveryCodeGenerate is emitted when a user's new recovery codes are generated and updated.
