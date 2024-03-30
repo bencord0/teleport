@@ -2941,7 +2941,7 @@ func (userNotificationExecutor) delete(ctx context.Context, cache *Cache, resour
 	}
 
 	username := notification.GetSpec().GetUsername()
-	notificationId := notification.GetSpec().GetId()
+	notificationId := notification.GetMetadata().GetName()
 
 	err := cache.notificationsCache.DeleteUserNotification(ctx, username, notificationId)
 	return trace.Wrap(err)
@@ -3004,7 +3004,7 @@ func (globalNotificationExecutor) delete(ctx context.Context, cache *Cache, reso
 		return trace.BadParameter("unknown Notification type, expected *notificationsv1.GlobalNotification, got %T", resource)
 	}
 
-	notificationId := globalNotification.GetSpec().GetNotification().GetSpec().GetId()
+	notificationId := globalNotification.GetMetadata().GetName()
 
 	err := cache.notificationsCache.DeleteGlobalNotification(ctx, notificationId)
 	return trace.Wrap(err)
