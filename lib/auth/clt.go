@@ -41,6 +41,7 @@ import (
 	loginrulepb "github.com/gravitational/teleport/api/gen/proto/go/teleport/loginrule/v1"
 	machineidv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/machineid/v1"
 	notificationsv1 "github.com/gravitational/teleport/api/gen/proto/go/teleport/notifications/v1"
+	notificationsv1pb "github.com/gravitational/teleport/api/gen/proto/go/teleport/notifications/v1"
 	pluginspb "github.com/gravitational/teleport/api/gen/proto/go/teleport/plugins/v1"
 	resourceusagepb "github.com/gravitational/teleport/api/gen/proto/go/teleport/resourceusage/v1"
 	samlidppb "github.com/gravitational/teleport/api/gen/proto/go/teleport/samlidp/v1"
@@ -517,6 +518,10 @@ func (c *Client) IntegrationAWSOIDCClient() integrationv1.AWSOIDCServiceClient {
 	return integrationv1.NewAWSOIDCServiceClient(c.APIClient.GetConnection())
 }
 
+func (c *Client) NotificationServiceClient() notificationsv1pb.NotificationServiceClient {
+	return notificationsv1pb.NewNotificationServiceClient(c.APIClient.GetConnection())
+}
+
 // ListRemoteClusters returns a page of remote clusters.
 func (c *Client) ListRemoteClusters(ctx context.Context, pageSize int, nextToken string) ([]types.RemoteCluster, string, error) {
 	return nil, "", trace.NotImplemented("ListRemoteClusters is not implemented yet")
@@ -582,6 +587,27 @@ func (c *Client) SetStaticTokens(st types.StaticTokens) error {
 	return trace.NotImplemented(notImplementedMessage)
 }
 
+// ListNotifications returns a paginated list of a user's notifications, which include user-specific ones as well as global notifications that match them.
+func (c *Client) ListNotifications(ctx context.Context, req *notificationsv1pb.ListNotificationsRequest) (*notificationsv1pb.ListNotificationsResponse, error) {
+	return c.APIClient.ListNotifications(ctx, req)
+}
+
+// UpsertUserNotificationState creates or updates a user notification state which records whether the user has clicked on or dismissed a notification.
+func (c *Client) UpsertUserNotificationState(ctx context.Context, username string, uns *notificationsv1pb.UserNotificationState) (*notificationsv1pb.UserNotificationState, error) {
+	return c.APIClient.UpsertUserNotificationState(ctx, &notificationsv1pb.UpsertUserNotificationStateRequest{
+		Username:              username,
+		UserNotificationState: uns,
+	})
+}
+
+// UpsertUserLastSeenNotification creates or updates a user's last seen notification item.
+func (c *Client) UpsertUserLastSeenNotification(ctx context.Context, username string, ulsn *notificationsv1pb.UserLastSeenNotification) (*notificationsv1pb.UserLastSeenNotification, error) {
+	return c.APIClient.UpsertUserLastSeenNotification(ctx, &notificationsv1pb.UpsertUserLastSeenNotificationRequest{
+		Username:                 username,
+		UserLastSeenNotification: ulsn,
+	})
+}
+
 // CreateGlobalNotification creates a global notification.
 func (c *Client) CreateGlobalNotification(ctx context.Context, globalNotification *notificationsv1.GlobalNotification) (*notificationsv1.GlobalNotification, error) {
 	// TODO(rudream): implement client methods for notifications
@@ -589,7 +615,7 @@ func (c *Client) CreateGlobalNotification(ctx context.Context, globalNotificatio
 }
 
 // CreateUserNotification creates a user-specific notification.
-func (c *Client) CreateUserNotification(ctx context.Context, notification *notificationsv1.Notification) (*notificationsv1.Notification, error) {
+func (c *Client) CreateUserNotification(ctx context.Context, notification *notificationsv1pb.Notification) (*notificationsv1pb.Notification, error) {
 	// TODO(rudream): implement client methods for notifications
 	return nil, trace.NotImplemented(notImplementedMessage)
 }
@@ -598,18 +624,6 @@ func (c *Client) CreateUserNotification(ctx context.Context, notification *notif
 func (c *Client) DeleteGlobalNotification(ctx context.Context, notificationId string) error {
 	// TODO(rudream): implement client methods for notifications
 	return trace.NotImplemented(notImplementedMessage)
-}
-
-// UpsertUserNotificationState creates or updates a user notification state which records whether the user has clicked on or dismissed a notification.
-func (c *Client) UpsertUserNotificationState(ctx context.Context, username string, state *notificationsv1.UserNotificationState) (*notificationsv1.UserNotificationState, error) {
-	// TODO(rudream): implement client methods for notifications
-	return nil, trace.NotImplemented(notImplementedMessage)
-}
-
-// UpsertUserLastSeenNotification creates or updates a user's last seen notification item.
-func (c *Client) UpsertUserLastSeenNotification(ctx context.Context, username string, ulsn *notificationsv1.UserLastSeenNotification) (*notificationsv1.UserLastSeenNotification, error) {
-	// TODO(rudream): implement client methods for notifications
-	return nil, trace.NotImplemented(notImplementedMessage)
 }
 
 // DeleteAllGlobalNotifications not implemented: can only be called locally.
@@ -648,32 +662,32 @@ func (c *Client) DeleteUserNotificationState(ctx context.Context, username strin
 }
 
 // GetUserLastSeenNotification not implemented: can only be called locally.
-func (c *Client) GetUserLastSeenNotification(ctx context.Context, username string) (*notificationsv1.UserLastSeenNotification, error) {
+func (c *Client) GetUserLastSeenNotification(ctx context.Context, username string) (*notificationsv1pb.UserLastSeenNotification, error) {
 	return nil, trace.NotImplemented(notImplementedMessage)
 }
 
 // ListGlobalNotifications not implemented: can only be called locally.
-func (c *Client) ListGlobalNotifications(ctx context.Context, pageSize int, startKey string) ([]*notificationsv1.GlobalNotification, string, error) {
+func (c *Client) ListGlobalNotifications(ctx context.Context, pageSize int, startKey string) ([]*notificationsv1pb.GlobalNotification, string, error) {
 	return nil, "", trace.NotImplemented(notImplementedMessage)
 }
 
 // ListUserNotifications not implemented: can only be called locally.
-func (c *Client) ListUserNotifications(ctx context.Context, pageSize int, startKey string) ([]*notificationsv1.Notification, string, error) {
+func (c *Client) ListUserNotifications(ctx context.Context, pageSize int, startKey string) ([]*notificationsv1pb.Notification, string, error) {
 	return nil, "", trace.NotImplemented(notImplementedMessage)
 }
 
 // ListUserNotificationStates not implemented: can only be called locally.
-func (c *Client) ListUserNotificationStates(ctx context.Context, username string, pageSize int, nextToken string) ([]*notificationsv1.UserNotificationState, string, error) {
+func (c *Client) ListUserNotificationStates(ctx context.Context, username string, pageSize int, nextToken string) ([]*notificationsv1pb.UserNotificationState, string, error) {
 	return nil, "", trace.NotImplemented(notImplementedMessage)
 }
 
 // UpsertGlobalNotification not implemented: can only be called locally.
-func (c *Client) UpsertGlobalNotification(ctx context.Context, globalNotification *notificationsv1.GlobalNotification) (*notificationsv1.GlobalNotification, error) {
+func (c *Client) UpsertGlobalNotification(ctx context.Context, globalNotification *notificationsv1pb.GlobalNotification) (*notificationsv1pb.GlobalNotification, error) {
 	return nil, trace.NotImplemented(notImplementedMessage)
 }
 
 // UpsertUserNotification not implemented: can only be called locally.
-func (c *Client) UpsertUserNotification(ctx context.Context, notification *notificationsv1.Notification) (*notificationsv1.Notification, error) {
+func (c *Client) UpsertUserNotification(ctx context.Context, notification *notificationsv1pb.Notification) (*notificationsv1pb.Notification, error) {
 	return nil, trace.NotImplemented(notImplementedMessage)
 }
 
@@ -1127,6 +1141,12 @@ type ClientI interface {
 	// when calling this method, but all RPCs will return "not implemented" errors
 	// (as per the default gRPC behavior).
 	WorkloadIdentityServiceClient() machineidv1pb.WorkloadIdentityServiceClient
+
+	// NotificationServiceClient returns a notification service client.
+	// Clients connecting to  older Teleport versions, still get a client
+	// when calling this method, but all RPCs will return "not implemented" errors
+	// (as per the default gRPC behavior).
+	NotificationServiceClient() notificationsv1pb.NotificationServiceClient
 
 	// ClusterConfigClient returns a Cluster Configuration client.
 	// Clients connecting to non-Enterprise clusters, or older Teleport versions,

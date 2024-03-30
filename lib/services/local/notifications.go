@@ -273,8 +273,21 @@ func (s *NotificationsService) UpsertUserNotificationState(ctx context.Context, 
 
 	// Verify that the notification this state is for exists.
 	notifServiceWithPrefix := s.userNotificationService.WithPrefix(username)
-	if _, err := notifServiceWithPrefix.GetResource(ctx, state.Spec.NotificationId); err != nil {
-		return nil, trace.Wrap(err)
+	_, err := notifServiceWithPrefix.GetResource(ctx, state.Spec.NotificationId)
+	if err != nil {
+		if !trace.IsNotFound(err) {
+			return nil, trace.Wrap(err)
+		}
+
+		// If we didn't find a user-specific notification with this ID, try finding a global notification.
+		_, err := s.globalNotificationService.GetResource(ctx, state.Spec.NotificationId)
+		if err != nil {
+			if !trace.IsNotFound(err) {
+				return nil, trace.Wrap(err)
+			}
+
+			return nil, trace.NotFound("notification '%s' does not exist", state.Spec.NotificationId)
+		}
 	}
 
 	state.Kind = types.KindUserNotificationState
