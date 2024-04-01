@@ -140,16 +140,22 @@ state transitions.
 
 ### Monitor the rotation status
 
-Check the cluster status:
+Check the status of the rotation. The following command prints the status of
+each CA in the cluster:
 
 ```code
 $ tctl status
 Cluster  acme.cluster
 Version  (=teleport.version=)
-Host CA  initialized (mode: manual, started: Sep 20 2023 01:44:36 UTC, ending: Sep 21 2023 07:44:36 UTC)
+[...]
+host CA  initialized (mode: manual, started: Sep 20 2023 01:44:36 UTC, ending: Sep 21 2023 07:44:36 UTC)
+[...]
 ```
 
 Check the status of individual nodes:
+
+{/* TODO: Does the `rotation` object only apply to certain CAs, or to all
+CAs?*/}
 
 ```code
 # Check rotation status of the nodes
