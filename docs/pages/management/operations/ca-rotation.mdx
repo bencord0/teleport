@@ -3,6 +3,13 @@ title: Cert Authority Rotation
 description: How to rotate Teleport's certificate authority
 ---
 
+Teleport maintains several certificate authorities, which it uses to sign
+certificates that enable resources in your infrastructure to trust traffic from
+Teleport—and for Teleport to trust traffic from resources in your
+infrastructure. You can rotate the Teleport certificate authorities to reduce
+the chance that a malicious actor will compromise a CA. This guide explains the
+CAs that Teleport maintains and how to rotate them.
+
 ## Prerequisites
 
 (!docs/pages/includes/edition-prereqs-tabs.mdx!)
