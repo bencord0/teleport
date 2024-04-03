@@ -39,9 +39,13 @@ import (
 	"github.com/gravitational/teleport/api/types"
 	apievents "github.com/gravitational/teleport/api/types/events"
 	"github.com/gravitational/teleport/lib/auth"
+	"github.com/gravitational/teleport/lib/authz"
 	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/httplib/reverseproxy"
 	"github.com/gravitational/teleport/lib/reversetunnelclient"
+	"github.com/gravitational/teleport/lib/services"
+	"github.com/gravitational/teleport/lib/srv"
+	srvapp "github.com/gravitational/teleport/lib/srv/app"
 	"github.com/gravitational/teleport/lib/tlsca"
 	"github.com/gravitational/teleport/lib/utils"
 )
@@ -63,6 +67,12 @@ type HandlerConfig struct {
 	CipherSuites []uint16
 	// WebPublicAddr
 	WebPublicAddr string
+	// Emitter is event emitter
+	Emitter apievents.Emitter
+	// DataDir is the path to the data directory for the server.
+	DataDir string
+	// HostID is the id of the host where this application agent is running.
+	HostID string
 }
 
 // CheckAndSetDefaults validates configuration.
@@ -79,6 +89,15 @@ func (c *HandlerConfig) CheckAndSetDefaults() error {
 	}
 	if len(c.CipherSuites) == 0 {
 		return trace.BadParameter("ciphersuites missing")
+	}
+	if c.DataDir == "" {
+		return trace.BadParameter("datadir missing")
+	}
+	if c.HostID == "" {
+		return trace.BadParameter("hostid missing")
+	}
+	if c.Emitter == nil {
+		return trace.BadParameter("emitter missing")
 	}
 
 	return nil
@@ -97,6 +116,91 @@ type Handler struct {
 	clusterName string
 
 	log *logrus.Entry
+
+	appConnectionsHandler *srvapp.ConnectionsHandler
+}
+
+func (h *Handler) setupAppConnectionsHandler() error {
+	lockWatcher, err := services.NewLockWatcher(h.closeContext, services.LockWatcherConfig{
+		ResourceWatcherConfig: services.ResourceWatcherConfig{
+			Component: teleport.ComponentWebProxy,
+			Log:       h.log.WithField(teleport.ComponentKey, teleport.ComponentWebProxy),
+			Client:    h.c.AccessPoint,
+		},
+	})
+	if err != nil {
+		return trace.Wrap(err)
+	}
+
+	authorizer, err := authz.NewAuthorizer(authz.AuthorizerOpts{
+		ClusterName: h.clusterName,
+		AccessPoint: h.c.AccessPoint,
+		LockWatcher: lockWatcher,
+		Logger:      h.log.WithField(teleport.ComponentKey, teleport.ComponentWebProxy),
+	})
+	if err != nil {
+		return trace.Wrap(err)
+	}
+
+	connMonitor, err := srv.NewConnectionMonitor(srv.ConnectionMonitorConfig{
+		AccessPoint:    h.c.AccessPoint,
+		LockWatcher:    lockWatcher,
+		Clock:          h.c.Clock,
+		ServerID:       h.c.HostID,
+		Emitter:        h.c.Emitter,
+		EmitterContext: h.closeContext,
+		Logger:         h.log,
+		//MonitorCloseChannel: process.Config.Apps.MonitorCloseChannel, // testing only
+	})
+	if err != nil {
+		return trace.Wrap(err)
+	}
+
+	tlsConfig, err := (&auth.Identity{}).TLSConfig(nil)
+	if err != nil {
+		return trace.Wrap(err)
+	}
+
+	// Load Integration Credentials here
+	cloud, err := srvapp.NewCloud(srvapp.CloudConfig{})
+	if err != nil {
+		return trace.Wrap(err)
+	}
+
+	connectionsHandler, err := srvapp.NewConnectionsHandler(h.closeContext, &srvapp.ConnectionsHandlerConfig{
+		Clock:             h.c.Clock,
+		DataDir:           h.c.DataDir,
+		Emitter:           h.c.Emitter,
+		Authorizer:        authorizer,
+		HostID:            h.c.HostID,
+		AuthClient:        h.c.AuthClient.(*auth.Client), // TODO(marco): change ConnectionsHandlerConfig.AuthClient to *auth.Client
+		AccessPoint:       h.c.AccessPoint,
+		Cloud:             cloud,
+		TLSConfig:         tlsConfig,
+		ConnectionMonitor: connMonitor,
+		CipherSuites:      h.c.CipherSuites,
+		ServiceComponent:  teleport.ComponentWebProxy,
+	})
+	if err != nil {
+		return trace.Wrap(err)
+	}
+
+	connectionsHandler.SetApplicationsProvider(func(ctx context.Context, s string) (types.Application, error) {
+		allApps, err := h.c.AccessPoint.GetApps(ctx)
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+		for _, a := range allApps {
+			if a.GetPublicAddr() == s {
+				return a, nil
+			}
+		}
+		return nil, trace.NotFound("not yet")
+	})
+
+	h.appConnectionsHandler = connectionsHandler
+
+	return nil
 }
 
 // NewHandler returns a new application handler.
@@ -141,6 +245,8 @@ func NewHandler(ctx context.Context, c *HandlerConfig) (*Handler, error) {
 	h.router.POST("/x-teleport-auth", makeRouterHandler(h.withCustomCORS(h.handleAuth)))
 	h.router.GET("/teleport-logout", h.withRouterAuth(h.handleLogout))
 	h.router.NotFound = h.withAuth(h.handleHttp)
+
+	h.setupAppConnectionsHandler()
 
 	return h, nil
 }

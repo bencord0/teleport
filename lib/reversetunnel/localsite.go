@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gravitational/trace"
 	"github.com/jonboulle/clockwork"
 	"github.com/prometheus/client_golang/prometheus"
@@ -584,6 +585,9 @@ func (s *localSite) getConn(params reversetunnelclient.DialParams) (conn net.Con
 
 		return newMetricConn(eiceTunnelConn.Tunnel, dialTypeDirect, dialStart, s.srv.Clock), false, nil
 	}
+
+	log.Println("============= GET CONN")
+	spew.Dump(params)
 
 	dreq := &sshutils.DialReq{
 		ServerID:      params.ServerID,

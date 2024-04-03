@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 
@@ -41,6 +42,7 @@ import (
 	"github.com/gravitational/teleport/lib/jwt"
 	"github.com/gravitational/teleport/lib/reversetunnelclient"
 	"github.com/gravitational/teleport/lib/services"
+	srvapp "github.com/gravitational/teleport/lib/srv/app"
 	"github.com/gravitational/teleport/lib/tlsca"
 	"github.com/gravitational/teleport/lib/utils"
 )
@@ -56,6 +58,8 @@ type transportConfig struct {
 	clusterName  string
 	log          logrus.FieldLogger
 	clock        clockwork.Clock
+
+	appConnectionsHandler *srvapp.ConnectionsHandler
 }
 
 // Check validates configuration.
@@ -133,6 +137,23 @@ func newTransport(c *transportConfig) (*transport, error) {
 	tr.DialContext = t.DialContext
 	tr.TLSClientConfig = t.clientTLSConfig
 
+	if c.servers[0].GetApp().GetIntegration() != "" {
+		// start a listener and then call HandleConnection
+		list, err := net.Listen("tcp", ":0")
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+		go func() {
+			c.log.Errorf("======= Waiting on connection! 🎉 %+v", list)
+			conn, err := list.Accept()
+			if err != nil {
+				c.log.Errorf("======= failed to accept a connection %+v", err)
+				return
+			}
+			c.log.Errorf("======= Starting connection handling! 🎉 %+v", conn)
+			c.appConnectionsHandler.HandleConnection(conn)
+		}()
+	}
 	t.tr = tr
 	return t, nil
 }
@@ -340,6 +361,7 @@ func (t *transport) DialContext(ctx context.Context, _, _ string) (conn net.Conn
 	t.mu.Lock()
 	if len(t.c.servers) == 0 {
 		defer t.mu.Unlock()
+		os.Exit(1)
 		return nil, trace.ConnectionProblem(nil, "no application servers remaining to connect")
 	}
 	servers := make([]types.AppServer, len(t.c.servers))
@@ -378,6 +400,7 @@ func (t *transport) DialContext(ctx context.Context, _, _ string) (conn net.Conn
 		return conn, trace.Wrap(err)
 	}
 
+	os.Exit(1)
 	return nil, trace.ConnectionProblem(nil, "no application servers remaining to connect")
 }
 

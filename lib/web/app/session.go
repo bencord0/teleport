@@ -92,6 +92,8 @@ func (h *Handler) newSession(ctx context.Context, ws types.WebSession) (*session
 		servers:      servers,
 		ws:           ws,
 		clusterName:  h.clusterName,
+
+		appConnectionsHandler: h.appConnectionsHandler,
 	})
 	if err != nil {
 		return nil, trace.Wrap(err)

@@ -238,6 +238,9 @@ type Config struct {
 	// HostUUID is the UUID of this process.
 	HostUUID string
 
+	// DataDir is the path to the data directory for the server.
+	DataDir string
+
 	// Context is used to signal process exit.
 	Context context.Context
 
@@ -622,6 +625,9 @@ func NewHandler(cfg Config, opts ...HandlerOption) (*APIHandler, error) {
 			CipherSuites:     cfg.CipherSuites,
 			ProxyPublicAddrs: cfg.ProxyPublicAddrs,
 			WebPublicAddr:    resp.SSH.PublicAddr,
+			HostID:           cfg.HostUUID,
+			DataDir:          cfg.DataDir,
+			Emitter:          cfg.Emitter,
 		})
 		if err != nil {
 			return nil, trace.Wrap(err)
